@@ -1,18 +1,22 @@
 import { Response } from "express";
-import { AuthRequest } from "../middleware/auth.middleware";
+import { authenticatedUserId, AuthRequest } from "../middleware/auth.middleware";
 import { WatchHistory } from "../models/WatchHistory";
+import { z } from "zod";
+import { savedVideoBody } from "../validation/schemas";
 
-export async function addToHistory(req: AuthRequest, res: Response) {
-  const { videoId, title, thumbnail } = req.body;
-  if (!videoId || !title || !thumbnail) {
-    return res
-      .status(400)
-      .json({ message: "videoId, title and thumbnail are required" });
-  }
+type SavedVideoBody = z.infer<typeof savedVideoBody>;
 
+export async function addToHistory(
+  req: AuthRequest<SavedVideoBody>,
+  res: Response,
+) {
   await WatchHistory.findOneAndUpdate(
-    { user: req.userId, videoId },
-    { title, thumbnail, watchedAt: new Date() },
+    { user: authenticatedUserId(req), videoId: req.body.videoId },
+    {
+      title: req.body.title,
+      thumbnail: req.body.thumbnail,
+      watchedAt: new Date(),
+    },
     { upsert: true, returnDocument: "after" },
   );
 
@@ -20,13 +24,13 @@ export async function addToHistory(req: AuthRequest, res: Response) {
 }
 
 export async function getHistory(req: AuthRequest, res: Response) {
-  const history = await WatchHistory.find({ user: req.userId })
+  const history = await WatchHistory.find({ user: authenticatedUserId(req) })
     .sort({ watchedAt: -1 })
     .limit(50);
   res.json(history);
 }
 
 export async function clearHistory(req: AuthRequest, res: Response) {
-  await WatchHistory.deleteMany({ user: req.userId });
+  await WatchHistory.deleteMany({ user: authenticatedUserId(req) });
   res.status(204).send();
 }

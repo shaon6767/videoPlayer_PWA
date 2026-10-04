@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api";
+import { apiErrorMessage } from "@/lib/api-errors";
 import { useAuth } from "@/lib/auth-context";
 import { Heart, History as HistoryIcon, LogOut, Mail } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -15,6 +16,8 @@ export default function ProfilePage() {
   const router = useRouter();
   const [favoritesCount, setFavoritesCount] = useState<number | null>(null);
   const [historyCount, setHistoryCount] = useState<number | null>(null);
+  const [error, setError] = useState("");
+  const [logoutError, setLogoutError] = useState("");
 
   useEffect(() => {
     if (authLoading) return;
@@ -22,14 +25,17 @@ export default function ProfilePage() {
       router.replace("/login");
       return;
     }
-    api
-      .get("/favorites")
-      .then((res) => setFavoritesCount(res.data.length))
-      .catch(() => setFavoritesCount(0));
-    api
-      .get("/history")
-      .then((res) => setHistoryCount(res.data.length))
-      .catch(() => setHistoryCount(0));
+    Promise.all([
+      api.get<unknown[]>("/favorites"),
+      api.get<unknown[]>("/history"),
+    ])
+      .then(([favorites, history]) => {
+        setFavoritesCount(favorites.data.length);
+        setHistoryCount(history.data.length);
+      })
+      .catch((cause: unknown) => {
+        setError(apiErrorMessage(cause, "Could not load your profile activity."));
+      });
   }, [user, authLoading, router]);
 
   if (authLoading || !user) {
@@ -44,6 +50,16 @@ export default function ProfilePage() {
     month: "long",
     year: "numeric",
   });
+
+  async function signOut() {
+    setLogoutError("");
+    try {
+      await logout();
+      router.push("/");
+    } catch (cause: unknown) {
+      setLogoutError(apiErrorMessage(cause, "Could not log out. Please retry."));
+    }
+  }
 
   return (
     <div className="mx-auto max-w-md">
@@ -62,6 +78,16 @@ export default function ProfilePage() {
           <p className="text-xs text-muted-foreground">Member since {joined}</p>
         </CardHeader>
         <CardContent>
+          {error && (
+            <p role="alert" className="mb-3 text-sm text-red-600">
+              {error}
+            </p>
+          )}
+          {logoutError && (
+            <p role="alert" className="mb-3 text-sm text-red-600">
+              {logoutError}
+            </p>
+          )}
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col items-center gap-1 rounded-lg border p-4">
               <Heart className="size-5 text-red-600" />
@@ -81,7 +107,7 @@ export default function ProfilePage() {
           <Button
             variant="outline"
             className="mt-4 w-full"
-            onClick={() => logout()}
+            onClick={signOut}
           >
             <LogOut className="mr-2 size-4" />
             Log out

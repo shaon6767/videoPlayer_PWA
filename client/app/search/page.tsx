@@ -1,13 +1,17 @@
 "use client";
 
-import { Input } from "@/components/ui/input";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { useInfiniteQuery } from "@tanstack/react-query";
+import { useSearchParams } from "next/navigation";
 import { VideoCard } from "@/components/VideoCard";
-import { useDebounce } from "@/hooks/useDebounce";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import { api } from "@/lib/api";
-import { Search } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { apiErrorMessage } from "@/lib/api-errors";
+import { VideoPage } from "@/lib/types";
+
+const SEARCH_LIMIT = 60;
 
 export default function SearchPage() {
   return (
@@ -19,114 +23,104 @@ export default function SearchPage() {
 
 function SearchContent() {
   const params = useSearchParams();
-  const router = useRouter();
+  const queryFromUrl = params.get("q") ?? "";
+  const [input, setInput] = useState(queryFromUrl);
 
-  const urlQuery = params.get("q") || "";
+  useEffect(() => setInput(queryFromUrl), [queryFromUrl]);
 
-  const [input, setInput] = useState(urlQuery);
-  const debouncedInput = useDebounce(input, 500);
+  const resultsQuery = useInfiniteQuery({
+    queryKey: ["search", queryFromUrl.trim().toLowerCase().replace(/\s+/g, " ")],
+    queryFn: async ({ pageParam }) =>
+      (
+        await api.get<VideoPage>("/youtube/search", {
+          params: { q: queryFromUrl, pageToken: pageParam },
+        })
+      ).data,
+    initialPageParam: undefined as string | undefined,
+    enabled: Boolean(queryFromUrl.trim()),
+    getNextPageParam: (lastPage, pages) => {
+      const loaded = pages.reduce((count, page) => count + page.items.length, 0);
+      return loaded < SEARCH_LIMIT ? lastPage.nextPageToken : undefined;
+    },
+  });
 
-  const [videos, setVideos] = useState<any[]>([]);
-  const [pageToken, setPageToken] = useState<string | undefined>();
-  const [loading, setLoading] = useState(false);
-  const [done, setDone] = useState(false);
-
-  useEffect(() => {
-    if (urlQuery !== input) {
-      setInput(urlQuery);
-    }
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [urlQuery]);
-
-  useEffect(() => {
-    if (debouncedInput !== urlQuery) {
-      router.replace(`/search?q=${encodeURIComponent(debouncedInput)}`, {
-        scroll: false,
-      });
-    }
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedInput]);
-
-  const loadResults = useCallback(
-    async (reset = false) => {
-      if (!debouncedInput.trim() || loading || (done && !reset)) return;
-
-      setLoading(true);
-
-      try {
-        const res = await api.get("/youtube/search", {
-          params: {
-            q: debouncedInput,
-            pageToken: reset ? undefined : pageToken,
-          },
-        });
-
-        setVideos((prev) =>
-          reset ? res.data.items : [...prev, ...res.data.items],
-        );
-
-        setPageToken(res.data.nextPageToken);
-        setDone(!res.data.nextPageToken);
-      } finally {
-        setLoading(false);
+  const videos = useMemo(
+    () => resultsQuery.data?.pages.flatMap((page) => page.items) ?? [],
+    [resultsQuery.data],
+  );
+  const sentinelRef = useInfiniteScroll(
+    () => {
+      if (resultsQuery.hasNextPage && !resultsQuery.isFetchingNextPage) {
+        void resultsQuery.fetchNextPage();
       }
     },
-    [debouncedInput, pageToken, loading, done],
+    Boolean(resultsQuery.hasNextPage && !resultsQuery.isFetching),
   );
 
-  useEffect(() => {
-    setVideos([]);
-    setPageToken(undefined);
-    setDone(false);
-
-    loadResults(true);
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedInput]);
-
-  const sentinelRef = useInfiniteScroll(() => loadResults(), !loading && !done);
+  function submit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const query = input.trim();
+    if (query) window.history.pushState(null, "", `/search?q=${encodeURIComponent(query)}`);
+  }
 
   return (
-    <div>
-      <div className="relative mb-4 max-w-md">
-        <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-
+    <section>
+      <form onSubmit={submit} role="search" className="mb-4 flex max-w-md gap-2">
         <Input
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={(event) => setInput(event.target.value)}
           placeholder="Search videos"
-          className="pl-9"
+          aria-label="Search videos"
         />
-      </div>
-
+        <Button type="submit">Search</Button>
+      </form>
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-        {videos.map((v) => (
+        {videos.map((video) => (
           <VideoCard
-            key={v.id.videoId}
-            videoId={v.id.videoId}
-            title={v.snippet.title}
-            thumbnail={v.snippet.thumbnails.medium.url}
-            channelTitle={v.snippet.channelTitle}
-            durationText={v.durationText}
+            key={video.id}
+            videoId={video.id}
+            title={video.title}
+            thumbnail={video.thumbnail}
+            channelTitle={video.channelTitle}
+            durationText={video.durationText}
           />
         ))}
       </div>
-
       <div ref={sentinelRef} className="h-8" />
-
-      {loading && (
+      {resultsQuery.isFetching && (
         <p className="mt-4 text-center text-sm text-muted-foreground">
-          Loading...
+          Loading results...
         </p>
       )}
-
-      {!loading && videos.length === 0 && debouncedInput && (
+      {resultsQuery.isError && (
+        <div role="alert" className="mt-4 text-center text-sm text-red-600">
+          <p>{apiErrorMessage(resultsQuery.error, "Could not load search results.")}</p>
+          <Button
+            variant="outline"
+            className="mt-2"
+            onClick={() =>
+              videos.length ? resultsQuery.fetchNextPage() : resultsQuery.refetch()
+            }
+          >
+            Retry
+          </Button>
+        </div>
+      )}
+      {!resultsQuery.isFetching && !resultsQuery.isError && queryFromUrl && videos.length === 0 && (
         <p className="mt-4 text-center text-sm text-muted-foreground">
-          No results for "{debouncedInput}"
+          No results for &quot;{queryFromUrl}&quot;.
         </p>
       )}
-    </div>
+      {resultsQuery.hasNextPage && videos.length < SEARCH_LIMIT && (
+        <p className="mt-4 text-center text-sm text-muted-foreground">
+          Scroll for more results.
+        </p>
+      )}
+      {videos.length >= SEARCH_LIMIT && (
+        <p className="mt-4 text-center text-sm text-muted-foreground">
+          You&apos;ve reached the end of these results.
+        </p>
+      )}
+    </section>
   );
 }

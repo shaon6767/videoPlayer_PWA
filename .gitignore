@@ -3,3 +3,6 @@ dist
 .env
 .env.local
 .next
+client/tsconfig.tsbuildinfo
+client/public/sw.js
+client/public/swe-worker.js

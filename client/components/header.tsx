@@ -25,10 +25,23 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/lib/auth-context";
+import { useState } from "react";
+import { apiErrorMessage } from "@/lib/api-errors";
 
 export function Header() {
   const { user, loading, logout } = useAuth();
   const router = useRouter();
+  const [logoutError, setLogoutError] = useState("");
+
+  async function signOut() {
+    setLogoutError("");
+    try {
+      await logout();
+      router.push("/");
+    } catch (error: unknown) {
+      setLogoutError(apiErrorMessage(error, "Could not log out. Please retry."));
+    }
+  }
 
   return (
     <header className="sticky top-0 z-50 flex items-center gap-4 border-b bg-background/95 px-4 py-3 shadow-sm backdrop-blur sm:px-6">
@@ -57,7 +70,14 @@ export function Header() {
         >
           <HistoryIcon className="size-5" />
         </Button>
-
+        <Button
+          variant="ghost"
+          size="sm"
+          nativeButton={false}
+          render={<Link href="/stats" />}
+        >
+          Stats
+        </Button>
         <ModeToggle />
 
         {loading ? (
@@ -92,7 +112,7 @@ export function Header() {
                 Favorites
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => logout()}>
+              <DropdownMenuItem onClick={signOut}>
                 <LogOut className="mr-2 size-4" />
                 Log out
               </DropdownMenuItem>
@@ -119,6 +139,14 @@ export function Header() {
           </div>
         )}
       </div>
+      {logoutError && (
+        <p
+          role="alert"
+          className="absolute right-3 top-full mt-1 rounded border bg-background px-3 py-2 text-xs text-red-600 shadow"
+        >
+          {logoutError}
+        </p>
+      )}
     </header>
   );
 }

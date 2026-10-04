@@ -1,6 +1,7 @@
 "use client";
 
 import { api } from "@/lib/api";
+import { User } from "@/lib/types";
 import {
   createContext,
   useCallback,
@@ -9,67 +10,84 @@ import {
   useState,
 } from "react";
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  createdAt: string;
-}
-
 interface AuthContextValue {
   user: User | null;
   loading: boolean;
-  login: (token: string, user: User) => void;
-  logout: () => void;
+  offline: boolean;
+  login: (user: User) => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+const OFFLINE_PROFILE_KEY = "streamly:offline-profile";
+
+function storedProfile(): User | null {
+  try {
+    const value = localStorage.getItem(OFFLINE_PROFILE_KEY);
+    return value ? (JSON.parse(value) as User) : null;
+  } catch {
+    return null;
+  }
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [offline, setOffline] = useState(false);
 
   const refresh = useCallback(async () => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      setUser(null);
-      setLoading(false);
-      return;
-    }
     try {
-      const res = await api.get("/auth/me");
-      setUser(res.data);
+      const response = await api.get<User>("/auth/me");
+      setUser(response.data);
+      localStorage.setItem(OFFLINE_PROFILE_KEY, JSON.stringify(response.data));
+      setOffline(false);
     } catch {
-      localStorage.removeItem("token");
-      setUser(null);
+      if (!navigator.onLine) {
+        setUser(storedProfile());
+        setOffline(true);
+      } else {
+        setUser(null);
+        localStorage.removeItem(OFFLINE_PROFILE_KEY);
+        setOffline(false);
+      }
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    refresh();
+    void refresh();
+    const markOffline = () => setOffline(true);
+    window.addEventListener("online", refresh);
+    window.addEventListener("offline", markOffline);
+    return () => {
+      window.removeEventListener("online", refresh);
+      window.removeEventListener("offline", markOffline);
+    };
   }, [refresh]);
 
-  function login(token: string, user: User) {
-    localStorage.setItem("token", token);
-    setUser(user);
-  }
+  const login = useCallback((nextUser: User) => {
+    localStorage.setItem(OFFLINE_PROFILE_KEY, JSON.stringify(nextUser));
+    setUser(nextUser);
+    setOffline(false);
+  }, []);
 
-  function logout() {
-    localStorage.removeItem("token");
+  const logout = useCallback(async () => {
+    await api.post("/auth/logout");
+    localStorage.removeItem(OFFLINE_PROFILE_KEY);
     setUser(null);
-  }
+    setOffline(false);
+  }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, offline, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
 }
 
 export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
-  return ctx;
+  const context = useContext(AuthContext);
+  if (!context) throw new Error("useAuth must be used within AuthProvider");
+  return context;
 }

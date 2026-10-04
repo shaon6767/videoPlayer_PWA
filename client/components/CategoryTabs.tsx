@@ -13,8 +13,9 @@ interface Props {
 
 export function CategoryTabs({ categories, activeId, onSelect }: Props) {
   return (
-    <div className="flex gap-2 overflow-x-auto pb-2">
+    <div role="group" aria-label="Video categories" className="flex gap-2 overflow-x-auto pb-2">
       <button
+        aria-pressed={!activeId}
         onClick={() => onSelect(undefined)}
         className={`shrink-0 rounded-full px-4 py-1 text-sm transition ${
           !activeId
@@ -27,6 +28,7 @@ export function CategoryTabs({ categories, activeId, onSelect }: Props) {
       {categories.map((c) => (
         <button
           key={c.id}
+          aria-pressed={activeId === c.id}
           onClick={() => onSelect(c.id)}
           className={`shrink-0 rounded-full px-4 py-1 text-sm transition ${
             activeId === c.id

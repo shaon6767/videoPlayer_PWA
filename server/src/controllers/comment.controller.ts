@@ -1,23 +1,18 @@
 import { Response } from "express";
-import { AuthRequest } from "../middleware/auth.middleware";
+import { authenticatedUserId, AuthRequest } from "../middleware/auth.middleware";
 import { Comment } from "../models/Comment";
+import { z } from "zod";
+import { commentBody } from "../validation/schemas";
 
-export async function addComment(req: AuthRequest, res: Response) {
-  const { videoId, text, rating } = req.body;
-  if (!videoId || !text || !rating) {
-    return res
-      .status(400)
-      .json({ message: "videoId, text and rating are required" });
-  }
-  if (rating < 1 || rating > 5) {
-    return res.status(400).json({ message: "Rating must be between 1 and 5" });
-  }
+type CommentBody = z.infer<typeof commentBody>;
 
+export async function addComment(
+  req: AuthRequest<CommentBody>,
+  res: Response,
+) {
   const comment = await Comment.create({
-    user: req.userId,
-    videoId,
-    text,
-    rating,
+    user: authenticatedUserId(req),
+    ...req.body,
   });
   const populated = await comment.populate("user", "name");
   res.status(201).json(populated);
@@ -33,7 +28,7 @@ export async function getComments(req: AuthRequest, res: Response) {
 export async function deleteComment(req: AuthRequest, res: Response) {
   const comment = await Comment.findById(req.params.id);
   if (!comment) return res.status(404).json({ message: "Comment not found" });
-  if (comment.user.toString() !== req.userId) {
+  if (comment.user.toString() !== authenticatedUserId(req)) {
     return res.status(403).json({ message: "Not your comment" });
   }
   await comment.deleteOne();

@@ -11,7 +11,9 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { api } from "@/lib/api";
+import { apiErrorMessage } from "@/lib/api-errors";
 import { useAuth } from "@/lib/auth-context";
+import { User } from "@/lib/types";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -30,16 +32,15 @@ export default function RegisterPage() {
     setError("");
     setSubmitting(true);
     try {
-      const res = await api.post("/auth/register", { name, email, password });
-      login(res.data.token, {
-        id: res.data.id,
-        name: res.data.name,
-        email: res.data.email,
-        createdAt: res.data.createdAt,
+      const res = await api.post<User>("/auth/register", {
+        name,
+        email,
+        password,
       });
+      login(res.data);
       router.push("/");
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Registration failed");
+    } catch (err: unknown) {
+      setError(apiErrorMessage(err, "Registration failed"));
     } finally {
       setSubmitting(false);
     }
@@ -77,6 +78,7 @@ export default function RegisterPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              minLength={8}
             />
             <Button
               type="submit"

@@ -6,15 +6,50 @@ import {
     search,
     videoDetails,
 } from "../controllers/youtube.controller";
-import { cache } from "../middleware/cache.middleware";
 import { searchLimiter } from "../middleware/rateLimiter.middleware";
+import { publicCache } from "../middleware/publicCache.middleware";
+import { trackPublicRequest } from "../middleware/trackRequests.middleware";
+import { validateRequest } from "../middleware/validateRequest.middleware";
+import {
+  emptyQuery,
+  popularQuery,
+  searchQuery,
+  videoIdParams,
+} from "../validation/schemas";
 
 const router = Router();
 
-router.get("/search", searchLimiter, cache(3600), search);
-router.get("/popular", cache(3600), popular);
-router.get("/categories", cache(86400), categories);
-router.get("/video/:videoId", cache(3600), videoDetails);
-router.get("/video/:videoId/related", cache(3600), related);
+router.use(trackPublicRequest);
+router.get(
+  "/search",
+  searchLimiter,
+  publicCache(60, 300),
+  validateRequest({ query: searchQuery }),
+  search,
+);
+router.get(
+  "/popular",
+  publicCache(60, 300),
+  validateRequest({ query: popularQuery }),
+  popular,
+);
+router.get(
+  "/categories",
+  publicCache(3600, 86400),
+  validateRequest({ query: emptyQuery }),
+  categories,
+);
+router.get(
+  "/video/:videoId",
+  publicCache(60, 300),
+  validateRequest({ params: videoIdParams, query: emptyQuery }),
+  videoDetails,
+);
+router.get(
+  "/video/:videoId/related",
+  publicCache(60, 300),
+  validateRequest({ params: videoIdParams, query: emptyQuery }),
+  related,
+);
 
 export default router;
