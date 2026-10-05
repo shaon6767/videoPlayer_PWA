@@ -26,7 +26,7 @@ The Next rewrite keeps browser requests same-origin when the UI and API are depl
      `curl.exe -i "http://localhost:5000/api/youtube/popular"`
    - Re-request with `If-None-Match: <ETag>` and confirm a `304` when the representation is unchanged. Public YouTube routes use browser `max-age`; user routes use `private, no-store`.
 2. **Vercel CDN**
-   - Deploy with `API_SERVER_URL` set to the backend origin and keep `NEXT_PUBLIC_API_URL=/api`.
+   - Deploy with `API_SERVER_URL` set to the backend origin. Browser requests always use same-origin `/api`; do not configure a direct browser API URL.
    - Request the same public `/api/youtube/popular` URL twice. Verify `Cache-Control` contains `s-maxage` and inspect Vercel's `x-vercel-cache` response header for an edge `HIT` after the initial `MISS`. Do not claim an edge hit if the deployment's response shows otherwise.
 3. **TanStack Query**
    - Load home, search, or a watch page and inspect the browser Network panel. Navigate away and back within 60 seconds; the list/video data should render from the query cache without an immediate duplicate request. After the stale time or focus revalidation, a refresh is expected.

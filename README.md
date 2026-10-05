@@ -35,7 +35,7 @@ npm install
 Copy-Item .env.example .env.local
 ```
 
-For the default local setup, the client `.env.local` values can remain `NEXT_PUBLIC_API_URL=/api` and `API_SERVER_URL=http://localhost:5000`. Start the API and UI in separate terminals:
+For the default local setup, the client `.env.local` value can remain `API_SERVER_URL=http://localhost:5000`. Browser API calls use the same-origin `/api` proxy; do not configure the browser client to call the backend origin directly. Start the API and UI in separate terminals:
 
 ```powershell
 # server/
@@ -68,7 +68,6 @@ Open `http://localhost:3000`. The API health check is `http://localhost:5000/hea
 
 | Variable | Purpose |
 | --- | --- |
-| `NEXT_PUBLIC_API_URL` | Browser API base URL; use `/api` for same-origin proxying. |
 | `API_SERVER_URL` | Express origin used by the Next.js rewrite and server-rendered requests. |
 
 Do not commit `.env` or `.env.local` files or expose the YouTube key in a `NEXT_PUBLIC_` variable.
