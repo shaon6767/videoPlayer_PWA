@@ -1,9 +1,8 @@
 import { withSerwist } from "@serwist/turbopack";
 
-const apiOrigin = (process.env.API_SERVER_URL || "http://localhost:5000").replace(
-  /\/$/,
-  "",
-);
+const apiOrigin = (
+  process.env.API_SERVER_URL || "https://youtube-lite-qwmo.onrender.com"
+).replace(/\/$/, "");
 
 const nextConfig = {
   async rewrites() {

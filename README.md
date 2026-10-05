@@ -35,7 +35,7 @@ npm install
 Copy-Item .env.example .env.local
 ```
 
-For the default local setup, the client `.env.local` value can remain `API_SERVER_URL=http://localhost:5000`. Browser API calls use the same-origin `/api` proxy; do not configure the browser client to call the backend origin directly. Start the API and UI in separate terminals:
+For local development, set `API_SERVER_URL=http://localhost:5000` in the client `.env.local`; the production Render API is the default when it is unset. Browser API calls use the same-origin `/api` proxy; do not configure the browser client to call the backend origin directly. Start the API and UI in separate terminals:
 
 ```powershell
 # server/

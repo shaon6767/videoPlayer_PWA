@@ -1,9 +1,8 @@
 import { VideoSummary } from "@/lib/types";
 
-const apiOrigin = (process.env.API_SERVER_URL || "http://localhost:5000").replace(
-  /\/$/,
-  "",
-);
+const apiOrigin = (
+  process.env.API_SERVER_URL || "https://youtube-lite-qwmo.onrender.com"
+).replace(/\/$/, "");
 
 async function getPublicData<T>(path: string): Promise<T> {
   const response = await fetch(`${apiOrigin}/api${path}`, {
