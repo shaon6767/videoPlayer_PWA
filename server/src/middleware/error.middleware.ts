@@ -13,6 +13,8 @@ export const errorHandler: ErrorRequestHandler = (
   res,
   _next,
 ) => {
+  res.setHeader("Cache-Control", "no-store");
+
   if (error instanceof ZodError) {
     res.status(400).json({
       message: "Invalid request",

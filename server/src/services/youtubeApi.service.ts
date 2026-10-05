@@ -94,7 +94,11 @@ function thumbnailOf(snippet: YouTubeSnippet): string {
   );
 }
 
-function toSummary(video: YouTubeVideo, duration?: string): VideoSummary {
+function toSummary(
+  video: YouTubeVideo,
+  duration?: string,
+  includeDescription = true,
+): VideoSummary {
   const id = typeof video.id === "string" ? video.id : video.id.videoId ?? "";
   const statistics = video.statistics;
   return {
@@ -106,7 +110,7 @@ function toSummary(video: YouTubeVideo, duration?: string): VideoSummary {
     ...(video.snippet.categoryId
       ? { categoryId: video.snippet.categoryId }
       : {}),
-    ...(video.snippet.description
+    ...(includeDescription && video.snippet.description
       ? { description: video.snippet.description }
       : {}),
     ...(statistics
@@ -156,8 +160,18 @@ async function youtubeGet<T>(
         ) ||
         message.includes("quota")
       ) {
+        console.error("YouTube API quota limit reached.", {
+          status: error.response?.status,
+          reasons,
+        });
         throw new YouTubeQuotaError();
       }
+      console.error("YouTube API request failed.", {
+        status: error.response?.status,
+        message: body?.error?.message ?? error.message,
+      });
+    } else {
+      console.error("YouTube API request failed.", error);
     }
     throw new YouTubeServiceError();
   }
@@ -194,12 +208,10 @@ async function cached<T>(
     return setCacheStatus(result, "HIT");
   }
 
-  await incrementStat("cacheMisses");
-  if (staleValue) await incrementStat("cacheStaleAvailable");
-
   const existing = inFlight.get(key);
   if (existing) {
     const result = (await existing) as T;
+    await incrementStat("cacheHits");
     await incrementStat(
       "quotaUnitsSaved",
       typeof estimatedUnits === "function"
@@ -212,6 +224,7 @@ async function cached<T>(
     );
   }
 
+  if (staleValue) await incrementStat("cacheStaleAvailable");
   const pending = (async () => {
     try {
       const result = await load();
@@ -237,6 +250,7 @@ async function cached<T>(
   })();
 
   inFlight.set(key, pending);
+  await incrementStat("cacheMisses");
   return pending as Promise<T>;
 }
 
@@ -281,7 +295,7 @@ async function attachSearchDurations(
 
   return videos.map((video) => {
     const id = typeof video.id === "string" ? video.id : video.id.videoId ?? "";
-    return toSummary(video, durationsById[id]);
+    return toSummary(video, durationsById[id], false);
   });
 }
 
@@ -336,7 +350,7 @@ export async function getPopularVideos(
       1,
     );
     return {
-      items: data.items.map((video) => toSummary(video)),
+      items: data.items.map((video) => toSummary(video, undefined, false)),
       ...(data.nextPageToken ? { nextPageToken: data.nextPageToken } : {}),
       ...(data.pageInfo?.totalResults !== undefined
         ? { totalResults: data.pageInfo.totalResults }

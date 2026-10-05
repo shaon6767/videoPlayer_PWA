@@ -13,11 +13,20 @@ import { VideoPage, VideoSummary } from "@/lib/types";
 import { useAuth } from "@/lib/auth-context";
 import { Heart } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 
 interface Props {
   videoId: string;
   initialVideo?: VideoSummary;
+}
+
+function subscribeToOnlineStatus(onChange: () => void) {
+  window.addEventListener("online", onChange);
+  window.addEventListener("offline", onChange);
+  return () => {
+    window.removeEventListener("online", onChange);
+    window.removeEventListener("offline", onChange);
+  };
 }
 
 export function WatchContent({ videoId, initialVideo }: Props) {
@@ -26,7 +35,12 @@ export function WatchContent({ videoId, initialVideo }: Props) {
   const queryClient = useQueryClient();
   const [historyError, setHistoryError] = useState("");
   const [favoriteError, setFavoriteError] = useState("");
-  const online = !offline && (typeof navigator === "undefined" || navigator.onLine);
+  const browserOnline = useSyncExternalStore(
+    subscribeToOnlineStatus,
+    () => navigator.onLine,
+    () => true,
+  );
+  const online = !offline && browserOnline;
 
   const videoQuery = useQuery({
     queryKey: ["video", videoId],

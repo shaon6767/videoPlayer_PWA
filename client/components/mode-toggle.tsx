@@ -14,14 +14,14 @@ export function ModeToggle() {
 
   return (
     <div className="flex items-center gap-2 px-1">
-      <Sun className="size-4 text-muted-foreground" />
+      <Sun className="hidden size-4 text-muted-foreground sm:block" />
       <Switch
         checked={resolvedTheme === "dark"}
         onCheckedChange={(checked: boolean) =>
           setTheme(checked ? "dark" : "light")
         }
       />
-      <Moon className="size-4 text-muted-foreground" />
+      <Moon className="hidden size-4 text-muted-foreground sm:block" />
     </div>
   );
 }

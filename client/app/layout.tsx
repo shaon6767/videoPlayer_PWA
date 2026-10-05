@@ -38,7 +38,7 @@ export default function RootLayout({
               <AuthProvider>
                 <NetworkStatus />
                 <Header />
-                <main className="p-4 sm:p-6">{children}</main>
+                <main className="min-w-0 p-3 sm:p-6">{children}</main>
               </AuthProvider>
             </ThemeProvider>
           </QueryProvider>

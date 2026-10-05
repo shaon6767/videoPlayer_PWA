@@ -39,20 +39,25 @@ export function Header() {
       await logout();
       router.push("/");
     } catch (error: unknown) {
-      setLogoutError(apiErrorMessage(error, "Could not log out. Please retry."));
+      setLogoutError(
+        error instanceof Error
+          ? error.message
+          : apiErrorMessage(error, "Could not log out. Please retry."),
+      );
     }
   }
 
   return (
-    <header className="sticky top-0 z-50 flex items-center gap-4 border-b bg-background/95 px-4 py-3 shadow-sm backdrop-blur sm:px-6">
+    <header className="sticky top-0 z-50 grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2 border-b bg-background/95 px-3 py-3 shadow-sm backdrop-blur sm:flex sm:gap-4 sm:px-6">
       <Logo />
 
-      <div className="flex flex-1 justify-center">
+      <div className="order-last col-span-2 min-w-0 sm:order-none sm:flex sm:flex-1 sm:justify-center">
         <SearchBar />
       </div>
 
-      <div className="flex items-center gap-1 sm:gap-3">
+      <div className="flex items-center justify-self-end gap-1 sm:gap-3">
         <Button
+          className="hidden sm:inline-flex"
           variant="ghost"
           size="icon"
           title="Favorites"
@@ -62,6 +67,7 @@ export function Header() {
           <Heart className="size-5" />
         </Button>
         <Button
+          className="hidden sm:inline-flex"
           variant="ghost"
           size="icon"
           title="Watch history"
@@ -71,6 +77,7 @@ export function Header() {
           <HistoryIcon className="size-5" />
         </Button>
         <Button
+          className="hidden sm:inline-flex"
           variant="ghost"
           size="sm"
           nativeButton={false}
@@ -111,6 +118,10 @@ export function Header() {
                 <Heart className="mr-2 size-4" />
                 Favorites
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => router.push("/history")}>
+                <HistoryIcon className="mr-2 size-4" />
+                Watch history
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={signOut}>
                 <LogOut className="mr-2 size-4" />
@@ -128,14 +139,16 @@ export function Header() {
             >
               Log in
             </Button>
-            <Button
-              size="sm"
-              className="bg-red-600 hover:bg-red-700"
-              nativeButton={false}
-              render={<Link href="/register" />}
-            >
-              Sign up
-            </Button>
+            <div className="hidden sm:block">
+              <Button
+                className="bg-red-600 hover:bg-red-700"
+                size="sm"
+                nativeButton={false}
+                render={<Link href="/register" />}
+              >
+                Sign up
+              </Button>
+            </div>
           </div>
         )}
       </div>

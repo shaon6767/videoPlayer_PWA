@@ -18,6 +18,7 @@ export const searchLimiter = rateLimit({
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 8,
+  skipSuccessfulRequests: true,
   standardHeaders: true,
   legacyHeaders: false,
   message: { message: "Too many login attempts. Try again in 15 minutes." },

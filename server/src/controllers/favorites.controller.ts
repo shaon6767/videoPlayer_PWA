@@ -28,7 +28,9 @@ export async function removeFavorite(req: AuthRequest, res: Response) {
 export async function getFavorites(req: AuthRequest, res: Response) {
   const favorites = await Favorite.find({
     user: authenticatedUserId(req),
-  }).sort({ addedAt: -1 });
+  })
+    .sort({ addedAt: -1 })
+    .limit(60);
   res.json(favorites);
 }
 

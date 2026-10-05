@@ -21,7 +21,8 @@ export async function generateMetadata({
         images: [video.thumbnail],
       },
     };
-  } catch {
+  } catch (error) {
+    console.error("Could not load video metadata for page title.", error);
     return { title: "Watch video on Streamly" };
   }
 }
@@ -31,7 +32,8 @@ export default async function WatchPage({ params }: PageProps) {
   let initialVideo;
   try {
     initialVideo = await getVideoMetadata(videoId);
-  } catch {
+  } catch (error) {
+    console.error("Could not load initial video metadata.", error);
     initialVideo = undefined;
   }
 

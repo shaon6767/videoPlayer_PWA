@@ -30,6 +30,7 @@ export async function videoDetails(
 ) {
   const video = await youtube.getVideoById(req.params.videoId);
   if (!video) {
+    res.setHeader("Cache-Control", "no-store");
     res.status(404).json({ message: "Video not found" });
     return;
   }

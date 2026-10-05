@@ -9,7 +9,7 @@ export default function NotFound() {
       </span>
       <h1 className="mt-6 text-2xl font-semibold">Page not found</h1>
       <p className="mt-2 text-muted-foreground">
-        This video or page doesn't exist.
+        This video or page doesn&apos;t exist.
       </p>
       <Button
         className="mt-6 bg-red-600 hover:bg-red-700"

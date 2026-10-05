@@ -36,7 +36,7 @@ export const registerBody = z
 export const loginBody = z
   .object({
     email: z.string().trim().email().max(254),
-    password: z.string().min(8).max(72),
+    password: z.string().min(1).max(72),
   })
   .strict();
 
@@ -44,7 +44,17 @@ export const savedVideoBody = z
   .object({
     videoId,
     title: z.string().trim().min(1).max(500),
-    thumbnail: z.string().url().max(2048),
+    thumbnail: z
+      .string()
+      .url()
+      .max(2048)
+      .refine((value) => {
+        const url = new URL(value);
+        return (
+          url.protocol === "https:" &&
+          ["i.ytimg.com", "img.youtube.com"].includes(url.hostname)
+        );
+      }, "Thumbnail must be hosted by YouTube"),
   })
   .strict();
 

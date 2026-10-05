@@ -61,3 +61,12 @@ export async function loadOfflineVideos(key: string): Promise<SavedVideo[]> {
     database.close();
   }
 }
+
+export async function deleteOfflineVideos(key: string): Promise<void> {
+  const database = await openDatabase();
+  try {
+    await transact(database, "readwrite", (store) => store.delete(key));
+  } finally {
+    database.close();
+  }
+}

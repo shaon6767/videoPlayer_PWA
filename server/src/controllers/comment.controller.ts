@@ -21,7 +21,8 @@ export async function addComment(
 export async function getComments(req: AuthRequest, res: Response) {
   const comments = await Comment.find({ videoId: req.params.videoId })
     .populate("user", "name")
-    .sort({ createdAt: -1 });
+    .sort({ createdAt: -1 })
+    .limit(100);
   res.json(comments);
 }
 

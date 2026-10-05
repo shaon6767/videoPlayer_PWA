@@ -8,6 +8,7 @@ const apiOrigin = (process.env.API_SERVER_URL || "http://localhost:5000").replac
 async function getPublicData<T>(path: string): Promise<T> {
   const response = await fetch(`${apiOrigin}/api${path}`, {
     cache: "no-store",
+    signal: AbortSignal.timeout(10_000),
   });
   if (!response.ok) throw new Error(`API request failed (${response.status})`);
   return (await response.json()) as T;

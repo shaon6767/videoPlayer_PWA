@@ -1,6 +1,8 @@
 "use client";
 
+import axios from "axios";
 import { api } from "@/lib/api";
+import { deleteOfflineVideos } from "@/lib/offline-store";
 import { User } from "@/lib/types";
 import {
   createContext,
@@ -41,13 +43,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(response.data);
       localStorage.setItem(OFFLINE_PROFILE_KEY, JSON.stringify(response.data));
       setOffline(false);
-    } catch {
+    } catch (error: unknown) {
       if (!navigator.onLine) {
         setUser(storedProfile());
         setOffline(true);
-      } else {
+      } else if (axios.isAxiosError(error) && error.response?.status === 401) {
         setUser(null);
         localStorage.removeItem(OFFLINE_PROFILE_KEY);
+        setOffline(false);
+      } else {
+        setUser((currentUser) => currentUser ?? storedProfile());
         setOffline(false);
       }
     } finally {
@@ -74,10 +79,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(async () => {
     await api.post("/auth/logout");
+    const userId = user?.id;
     localStorage.removeItem(OFFLINE_PROFILE_KEY);
     setUser(null);
     setOffline(false);
-  }, []);
+    if (userId) {
+      try {
+        await Promise.all([
+          deleteOfflineVideos(`favorites:${userId}`),
+          deleteOfflineVideos(`history:${userId}`),
+        ]);
+      } catch {
+        throw new Error(
+          "You were signed out, but saved data could not be cleared from this device.",
+        );
+      }
+    }
+  }, [user]);
 
   return (
     <AuthContext.Provider value={{ user, loading, offline, login, logout }}>
