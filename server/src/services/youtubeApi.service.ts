@@ -74,6 +74,13 @@ export class YouTubeServiceError extends Error {
   }
 }
 
+class YouTubeChartNotFoundError extends Error {
+  constructor() {
+    super("YouTube has no popular chart for this category.");
+    this.name = "YouTubeChartNotFoundError";
+  }
+}
+
 function formatDuration(iso = "PT0S"): string {
   const match = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
   const hours = Number(match?.[1] || 0);
@@ -165,6 +172,9 @@ async function youtubeGet<T>(
           reasons,
         });
         throw new YouTubeQuotaError();
+      }
+      if (reasons.includes("videoChartNotFound")) {
+        throw new YouTubeChartNotFoundError();
       }
       console.error("YouTube API request failed.", {
         status: error.response?.status,
@@ -337,25 +347,30 @@ export async function getPopularVideos(
 ): Promise<VideoPage> {
   const key = `popular:${categoryId ?? "all"}:${pageToken ?? ""}`;
   return cached(key, 1, async () => {
-    const data = await youtubeGet<YouTubeListResponse>(
-      "/videos",
-      {
-        part: "snippet,statistics,contentDetails",
-        chart: "mostPopular",
-        regionCode: "US",
-        maxResults: 12,
-        videoCategoryId: categoryId,
-        pageToken,
-      },
-      1,
-    );
-    return {
-      items: data.items.map((video) => toSummary(video, undefined, false)),
-      ...(data.nextPageToken ? { nextPageToken: data.nextPageToken } : {}),
-      ...(data.pageInfo?.totalResults !== undefined
-        ? { totalResults: data.pageInfo.totalResults }
-        : {}),
-    };
+    try {
+      const data = await youtubeGet<YouTubeListResponse>(
+        "/videos",
+        {
+          part: "snippet,statistics,contentDetails",
+          chart: "mostPopular",
+          regionCode: "US",
+          maxResults: 12,
+          videoCategoryId: categoryId,
+          pageToken,
+        },
+        1,
+      );
+      return {
+        items: data.items.map((video) => toSummary(video, undefined, false)),
+        ...(data.nextPageToken ? { nextPageToken: data.nextPageToken } : {}),
+        ...(data.pageInfo?.totalResults !== undefined
+          ? { totalResults: data.pageInfo.totalResults }
+          : {}),
+      };
+    } catch (error) {
+      if (error instanceof YouTubeChartNotFoundError) return { items: [] };
+      throw error;
+    }
   });
 }
 

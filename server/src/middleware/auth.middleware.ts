@@ -22,7 +22,9 @@ export function requireAuth(
   if (!token) return res.status(401).json({ message: "Not authenticated" });
 
   try {
-    const payload = jwt.verify(token, env.jwtSecret);
+    const payload = jwt.verify(token, env.jwtSecret, {
+      algorithms: ["HS256"],
+    });
     if (
       typeof payload !== "object" ||
       payload === null ||

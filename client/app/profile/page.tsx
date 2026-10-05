@@ -11,6 +11,10 @@ import { Heart, History as HistoryIcon, LogOut, Mail } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+interface FavoritesPage {
+  totalCount: number;
+}
+
 export default function ProfilePage() {
   const { user, loading: authLoading, logout } = useAuth();
   const router = useRouter();
@@ -26,11 +30,11 @@ export default function ProfilePage() {
       return;
     }
     Promise.all([
-      api.get<unknown[]>("/favorites"),
+      api.get<FavoritesPage>("/favorites", { params: { page: 1 } }),
       api.get<unknown[]>("/history"),
     ])
       .then(([favorites, history]) => {
-        setFavoritesCount(favorites.data.length);
+        setFavoritesCount(favorites.data.totalCount);
         setHistoryCount(history.data.length);
       })
       .catch((cause: unknown) => {
@@ -71,10 +75,12 @@ export default function ProfilePage() {
             </AvatarFallback>
           </Avatar>
           <h1 className="mt-3 text-xl font-semibold">{user.name}</h1>
-          <p className="flex items-center gap-1 text-sm text-muted-foreground">
-            <Mail className="size-3.5" />
-            {user.email}
-          </p>
+          {"email" in user && (
+            <p className="flex items-center gap-1 text-sm text-muted-foreground">
+              <Mail className="size-3.5" />
+              {user.email}
+            </p>
+          )}
           <p className="text-xs text-muted-foreground">Member since {joined}</p>
         </CardHeader>
         <CardContent>

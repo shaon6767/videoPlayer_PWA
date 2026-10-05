@@ -17,5 +17,6 @@ const favoriteSchema = new Schema<IFavorite>({
 });
 
 favoriteSchema.index({ user: 1, videoId: 1 }, { unique: true });
+favoriteSchema.index({ user: 1, addedAt: -1, _id: -1 });
 
 export const Favorite = model<IFavorite>("Favorite", favoriteSchema);

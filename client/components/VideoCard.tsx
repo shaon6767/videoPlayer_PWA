@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 interface Props {
@@ -18,11 +19,13 @@ export function VideoCard({
   return (
     <Link href={`/watch/${videoId}`} className="group block">
       <div className="relative aspect-video overflow-hidden rounded-xl bg-muted shadow-sm transition-shadow group-hover:shadow-md">
-        <img
+        <Image
           src={thumbnail}
           alt={title}
+          fill
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+          unoptimized
           className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-          loading="lazy"
         />
         {durationText && (
           <span className="absolute bottom-1 right-1 rounded bg-black/80 px-1.5 py-0.5 text-xs font-medium text-white">

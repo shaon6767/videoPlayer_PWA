@@ -20,6 +20,12 @@ export const popularQuery = z
   })
   .strict();
 
+export const favoritesQuery = z
+  .object({
+    page: z.coerce.number().int().min(1).max(10_000).default(1),
+  })
+  .strict();
+
 export const videoIdParams = z.object({ videoId }).strict();
 export const commentIdParams = z
   .object({ id: z.string().regex(/^[a-f\d]{24}$/i) })
@@ -65,5 +71,3 @@ export const commentBody = z
     rating: z.number().int().min(1).max(5),
   })
   .strict();
-
-export const statsQuery = emptyQuery;

@@ -13,27 +13,52 @@ import {
 } from "react";
 
 interface AuthContextValue {
-  user: User | null;
+  user: User | OfflineProfile | null;
   loading: boolean;
   offline: boolean;
   login: (user: User) => void;
   logout: () => Promise<void>;
 }
 
+type OfflineProfile = Pick<User, "id" | "name" | "createdAt">;
+
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 const OFFLINE_PROFILE_KEY = "streamly:offline-profile";
 
-function storedProfile(): User | null {
+function storedProfile(): OfflineProfile | null {
   try {
     const value = localStorage.getItem(OFFLINE_PROFILE_KEY);
-    return value ? (JSON.parse(value) as User) : null;
+    if (!value) return null;
+    const parsed = JSON.parse(value) as Partial<OfflineProfile>;
+    if (
+      typeof parsed.id !== "string" ||
+      typeof parsed.name !== "string" ||
+      typeof parsed.createdAt !== "string"
+    ) {
+      return null;
+    }
+    const profile = {
+      id: parsed.id,
+      name: parsed.name,
+      createdAt: parsed.createdAt,
+    };
+    localStorage.setItem(OFFLINE_PROFILE_KEY, JSON.stringify(profile));
+    return profile;
   } catch {
     return null;
   }
 }
 
+function saveOfflineProfile(user: User): void {
+  const { id, name, createdAt } = user;
+  localStorage.setItem(
+    OFFLINE_PROFILE_KEY,
+    JSON.stringify({ id, name, createdAt }),
+  );
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | OfflineProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [offline, setOffline] = useState(false);
 
@@ -41,7 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const response = await api.get<User>("/auth/me");
       setUser(response.data);
-      localStorage.setItem(OFFLINE_PROFILE_KEY, JSON.stringify(response.data));
+      saveOfflineProfile(response.data);
       setOffline(false);
     } catch (error: unknown) {
       if (!navigator.onLine) {
@@ -72,7 +97,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [refresh]);
 
   const login = useCallback((nextUser: User) => {
-    localStorage.setItem(OFFLINE_PROFILE_KEY, JSON.stringify(nextUser));
+    saveOfflineProfile(nextUser);
     setUser(nextUser);
     setOffline(false);
   }, []);

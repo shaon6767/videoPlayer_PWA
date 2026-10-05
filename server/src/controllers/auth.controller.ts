@@ -22,7 +22,11 @@ const cookieOptions = {
 };
 
 function signToken(userId: string): string {
-  return jwt.sign({ userId }, env.jwtSecret, { expiresIn: env.jwtExpiresIn });
+  return jwt.sign(
+    { userId },
+    env.jwtSecret,
+    { algorithm: "HS256", expiresIn: env.jwtExpiresIn },
+  );
 }
 
 function setAuthCookie(res: Response, userId: string): void {

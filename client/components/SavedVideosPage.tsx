@@ -14,6 +14,12 @@ interface SavedVideoDocument extends SavedVideo {
   _id: string;
 }
 
+interface FavoritesPage {
+  items: SavedVideoDocument[];
+  totalCount: number;
+  totalPages: number;
+}
+
 interface Props {
   type: "favorites" | "history";
   title: string;
@@ -26,6 +32,9 @@ export function SavedVideosPage({ type, title }: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [retry, setRetry] = useState(0);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState<number | null>(null);
 
   useEffect(() => {
     if (authLoading) return;
@@ -43,13 +52,39 @@ export function SavedVideosPage({ type, title }: Props) {
     async function load() {
       if (!navigator.onLine) {
         const cachedVideos = await loadOfflineVideos(key);
-        if (!cancelled) setVideos(cachedVideos);
+        if (!cancelled) {
+          setVideos(cachedVideos);
+          setTotalCount(null);
+          setTotalPages(1);
+        }
         return;
       }
 
       try {
-        const response = await api.get<SavedVideoDocument[]>(`/${type}`);
-        const saved = response.data.map(({ videoId, title: itemTitle, thumbnail, watchedAt, addedAt }) => ({
+        let documents: SavedVideoDocument[];
+        if (type === "favorites") {
+          const response = await api.get<FavoritesPage>("/favorites", {
+            params: { page },
+          });
+          documents = response.data.items;
+          if (!cancelled) {
+            setTotalCount(response.data.totalCount);
+            const pageCount = Math.max(1, response.data.totalPages);
+            setTotalPages(pageCount);
+            if (page > pageCount) {
+              setPage(pageCount);
+              return;
+            }
+          }
+        } else {
+          const response = await api.get<SavedVideoDocument[]>("/history");
+          documents = response.data;
+          if (!cancelled) {
+            setTotalCount(documents.length);
+            setTotalPages(1);
+          }
+        }
+        const saved = documents.map(({ videoId, title: itemTitle, thumbnail, watchedAt, addedAt }) => ({
           videoId,
           title: itemTitle,
           thumbnail,
@@ -57,11 +92,13 @@ export function SavedVideosPage({ type, title }: Props) {
           addedAt,
         }));
         if (!cancelled) setVideos(saved);
-        try {
-          await saveOfflineVideos(key, saved);
-        } catch {
-          if (!cancelled) {
-            setError("Loaded successfully, but could not save an offline copy.");
+        if (type !== "favorites" || page === 1) {
+          try {
+            await saveOfflineVideos(key, saved);
+          } catch {
+            if (!cancelled) {
+              setError("Loaded successfully, but could not save an offline copy.");
+            }
           }
         }
       } catch {
@@ -91,7 +128,7 @@ export function SavedVideosPage({ type, title }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [authLoading, offline, retry, router, title, type, user]);
+  }, [authLoading, offline, page, retry, router, title, type, user]);
 
   if (authLoading || loading) {
     return (
@@ -106,6 +143,11 @@ export function SavedVideosPage({ type, title }: Props) {
   return (
     <section>
       <h1 className="mb-4 text-lg font-semibold">{title}</h1>
+      {type === "favorites" && totalCount !== null && (
+        <p className="mb-4 text-sm text-muted-foreground">
+          {totalCount} favorite{totalCount === 1 ? "" : "s"} total
+        </p>
+      )}
       {error && (
         <div role="alert" className="mb-4 flex items-center gap-3 text-sm text-red-600">
           <p>{error}</p>
@@ -138,6 +180,30 @@ export function SavedVideosPage({ type, title }: Props) {
             />
           ))}
         </div>
+      )}
+      {type === "favorites" && totalPages > 1 && (
+        <nav
+          aria-label="Favorites pages"
+          className="mt-6 flex items-center justify-center gap-3"
+        >
+          <Button
+            variant="outline"
+            onClick={() => setPage((current) => Math.max(1, current - 1))}
+            disabled={page <= 1 || loading}
+          >
+            Previous
+          </Button>
+          <span className="text-sm text-muted-foreground">
+            Page {page} of {totalPages}
+          </span>
+          <Button
+            variant="outline"
+            onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+            disabled={page >= totalPages || loading}
+          >
+            Next
+          </Button>
+        </nav>
       )}
     </section>
   );
