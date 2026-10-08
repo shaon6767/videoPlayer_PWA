@@ -1,6 +1,6 @@
 # Project Overview
 
-Streamly is a YouTube discovery and watch-list application. It helps people browse popular YouTube videos, search for videos, and keep track of favorites, viewing history, and comments in one interface.
+Playlix is a YouTube discovery and watch-list application. It helps people browse popular YouTube videos, search for videos, and keep track of favorites, viewing history, and comments in one interface.
 
 The frontend is a Next.js application and the backend is an Express API. The API retrieves and normalizes video data from the YouTube Data API, caches public responses in Redis, and stores user accounts and saved content in MongoDB. Users can browse without an account; an account is needed for favorites, history, and posting or deleting comments.
 
@@ -20,7 +20,7 @@ The frontend is a Next.js application and the backend is an Express API. The API
 1. The Next.js App Router renders the pages and shared UI. Home and watch pages can fetch their initial public data server-side.
 2. Browser API calls use `/api` on the frontend origin. A Next.js rewrite forwards them to the Express API, so browser requests do not need a separate API origin.
 3. Express validates request bodies, query strings, and route parameters with Zod, then dispatches to route controllers.
-4. Public video routes call the YouTube Data API v3. Results are normalized to Streamly's video shape and cached in Redis: fresh entries last one hour and stale copies last seven days. Identical in-flight cache misses are coalesced within a server process. If an upstream request fails and a stale value exists, the API serves that value.
+4. Public video routes call the YouTube Data API v3. Results are normalized to Playlix's video shape and cached in Redis: fresh entries last one hour and stale copies last seven days. Identical in-flight cache misses are coalesced within a server process. If an upstream request fails and a stale value exists, the API serves that value.
 5. Registration and login issue a signed JWT in an `httpOnly` cookie. Authenticated API routes verify that cookie before reading or changing the current user's MongoDB records.
 6. On supported browser storage, the app separately saves small favorites/history snapshots in IndexedDB for offline list viewing. The service worker does not cache `/api`, YouTube thumbnails, or video media.
 
@@ -75,7 +75,7 @@ These are implementation- and operations-level challenges evident from the code 
 
 # Limitations
 
-- YouTube playback is embedded from YouTube; video files are not hosted or cached by Streamly.
+- YouTube playback is embedded from YouTube; video files are not hosted or cached by Playlix.
 - The popular chart and categories use the US region. Search results and video availability depend on YouTube.
 - The related list is drawn from the popular feed for the video's category; it is not a personalized recommendation system.
 - Watch history returns only the 50 newest records. Favorites are paged in groups of 60, and comments return at most 100 entries per video.

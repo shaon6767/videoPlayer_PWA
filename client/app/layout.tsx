@@ -11,18 +11,18 @@ import "./globals.css";
 const geist = Geist({ subsets: ["latin"], variable: "--font-geist" });
 
 export const metadata: Metadata = {
-  title: "Streamly",
+  title: "Playlix",
   description: "Discover and watch YouTube videos, save favorites, and share reviews.",
-  applicationName: "Streamly",
+  applicationName: "Playlix",
   manifest: "/manifest.webmanifest",
-  appleWebApp: { capable: true, title: "Streamly", statusBarStyle: "default" },
+  appleWebApp: { capable: true, title: "Playlix", statusBarStyle: "default" },
   icons: {
     icon: "/icon.svg",
     apple: "/apple-icon.png",
   },
 };
 
-export const viewport: Viewport = { themeColor: "#dc2626" };
+export const viewport: Viewport = { themeColor: "#5b21b6" };
 
 export default function RootLayout({
   children,

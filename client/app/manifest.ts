@@ -2,13 +2,13 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Streamly",
-    short_name: "Streamly",
+    name: "Playlix",
+    short_name: "Playlix",
     description: "Discover and watch YouTube videos.",
     start_url: "/",
     display: "standalone",
     background_color: "#ffffff",
-    theme_color: "#dc2626",
+    theme_color: "#5b21b6",
     icons: [
       {
         src: "/icons/icon-192.png",

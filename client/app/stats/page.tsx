@@ -1,7 +1,7 @@
 import { StatsDashboard } from "@/components/StatsDashboard";
 
 export const metadata = {
-  title: "Cache & quota stats | Streamly",
+  title: "Cache & quota stats | Playlix",
   description: "Public, aggregate cache performance and YouTube quota statistics.",
 };
 

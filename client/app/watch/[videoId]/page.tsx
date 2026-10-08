@@ -14,7 +14,7 @@ export async function generateMetadata({
     const video = await getVideoMetadata(videoId);
     return {
       title: video.title,
-      description: `${video.title} by ${video.channelTitle} — watch on Streamly.`,
+      description: `${video.title} by ${video.channelTitle} — watch on Playlix.`,
       openGraph: {
         title: video.title,
         description: `${video.title} by ${video.channelTitle}`,
@@ -23,7 +23,7 @@ export async function generateMetadata({
     };
   } catch (error) {
     console.error("Could not load video metadata for page title.", error);
-    return { title: "Watch video on Streamly" };
+    return { title: "Watch video on Playlix" };
   }
 }
 
