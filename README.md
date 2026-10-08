@@ -4,7 +4,17 @@ Playlix is a video discovery and watch-list app for browsing and searching YouTu
 
 ## Screenshots
 
-No application screenshots are currently included in the repository.
+**Homepage:** browse videos by category.
+
+![Playlix homepage showing category filters and the video feed](docs/screenshots/homepage.png)
+
+**Search suggestions:** matching videos appear while typing.
+
+![Playlix search bar showing video suggestions for Barcelona](docs/screenshots/search-suggestions.png)
+
+**Offline history:** previously saved watch history remains available offline.
+
+![Playlix Watch History page displayed with the offline status banner](docs/screenshots/history-offline.png)
 
 ## Features
 
