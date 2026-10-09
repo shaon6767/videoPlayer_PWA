@@ -1,6 +1,6 @@
 # Playlix
 
-Playlix is a video discovery and watch-list app for browsing and searching YouTube in one place. It helps users find videos, watch them, and keep favorites, viewing history, and comments tied to their account.
+Playlix is a video discovery and watch-list app for browsing and searching YouTube in one place. It helps users find videos, watch them, and keep favorites, viewing history, and comments tied to their account. also there are no ads!!
 
 ## Screenshots
 
